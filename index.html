@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#1a0a2e">
+<title>BlockPop — Drop. Clear. One more round.</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:#1a0a2e;color:#fff;touch-action:none;user-select:none}
+#app{max-width:420px;margin:0 auto;height:100%;height:100dvh;display:flex;flex-direction:column;position:relative;background:linear-gradient(180deg,#1a0a2e 0%,#2d1b4e 50%,#1a0a2e 100%)}
+
+/* Screens */
+.screen{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;padding-bottom:56px;z-index:10;background:inherit}
+.screen.hidden{display:none}
+#game-screen{position:relative;flex:1;display:flex;flex-direction:column;padding:8px 12px 56px;z-index:1;max-width:420px;width:100%;margin:0 auto}
+#game-screen.hidden{display:none}
+
+/* Start */
+.logo{font-size:2.6rem;font-weight:900;letter-spacing:-1px;background:linear-gradient(135deg,#ff6b9d,#c44dff,#6b8cff,#4dffc4);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:4px;text-align:center}
+.tagline{color:#b8a0d4;font-size:.95rem;margin-bottom:28px;text-align:center}
+.howto{background:rgba(255,255,255,.06);border-radius:14px;padding:14px 18px;margin-bottom:24px;font-size:.82rem;line-height:1.55;color:#d4c4e8;max-width:320px}
+.howto strong{color:#ff9ec8}
+.btn{display:block;width:100%;max-width:280px;padding:16px 24px;border:none;border-radius:16px;font-size:1.15rem;font-weight:700;cursor:pointer;transition:transform .12s,box-shadow .12s;margin:8px 0}
+.btn:active{transform:scale(.96)}
+.btn-play{background:linear-gradient(135deg,#ff6b9d,#c44dff);color:#fff;box-shadow:0 6px 24px rgba(196,77,255,.45)}
+.btn-secondary{background:rgba(255,255,255,.1);color:#e8d8ff;border:1px solid rgba(255,255,255,.15)}
+.btn-revive{background:linear-gradient(135deg,#ffd56b,#ff9a3c);color:#2a1500;box-shadow:0 6px 20px rgba(255,154,60,.4)}
+.btn-hint{background:rgba(77,255,196,.15);color:#4dffc4;border:1px solid rgba(77,255,196,.35);font-size:.9rem;padding:10px 16px;max-width:200px}
+.best-badge{margin-top:12px;color:#ffd56b;font-size:.9rem}
+
+/* HUD */
+.hud{display:flex;justify-content:space-between;align-items:center;padding:4px 4px 8px;gap:8px}
+.score-box{flex:1}
+.score-label{font-size:.65rem;text-transform:uppercase;letter-spacing:1px;color:#9a7fb8}
+.score-val{font-size:1.7rem;font-weight:800;line-height:1.1}
+.best-mini{font-size:.7rem;color:#ffd56b}
+.hud-actions{display:flex;gap:6px;align-items:center}
+.combo-flash{position:absolute;top:18%;left:50%;transform:translateX(-50%);font-size:1.5rem;font-weight:900;pointer-events:none;z-index:20;opacity:0;text-shadow:0 2px 12px rgba(0,0,0,.5);white-space:nowrap}
+.combo-flash.show{animation:comboPop .9s ease forwards}
+@keyframes comboPop{0%{opacity:0;transform:translateX(-50%) scale(.5) translateY(10px)}20%{opacity:1;transform:translateX(-50%) scale(1.2) translateY(0)}70%{opacity:1}100%{opacity:0;transform:translateX(-50%) scale(1) translateY(-30px)}}
+
+/* Board */
+.board-wrap{flex:1;display:flex;align-items:center;justify-content:center;min-height:0;position:relative}
+#board{display:grid;grid-template-columns:repeat(8,1fr);gap:3px;width:min(100%,calc(100vw - 40px),360px);aspect-ratio:1;background:rgba(0,0,0,.35);padding:5px;border-radius:12px;box-shadow:inset 0 0 30px rgba(0,0,0,.3)}
+.cell{border-radius:5px;background:rgba(255,255,255,.06);transition:background .08s,transform .15s;aspect-ratio:1}
+.cell.filled{box-shadow:inset 0 -2px 0 rgba(0,0,0,.25),0 1px 3px rgba(0,0,0,.2)}
+.cell.ghost{opacity:.45;outline:2px solid rgba(255,255,255,.5);outline-offset:-1px}
+.cell.ghost-bad{opacity:.3;outline:2px solid rgba(255,80,80,.6);outline-offset:-1px}
+.cell.clearing{animation:clearPop .35s ease forwards}
+.cell.hint-glow{animation:hintPulse .6s ease infinite alternate;outline:2px solid #4dffc4;outline-offset:-1px}
+@keyframes clearPop{0%{transform:scale(1);opacity:1}50%{transform:scale(1.15);opacity:.8}100%{transform:scale(0);opacity:0}}
+@keyframes hintPulse{from{filter:brightness(1)}to{filter:brightness(1.4)}}
+
+/* Tray */
+.tray-area{padding:10px 0 8px}
+.tray-label{font-size:.65rem;text-transform:uppercase;letter-spacing:1px;color:#9a7fb8;text-align:center;margin-bottom:6px}
+.tray{display:flex;justify-content:center;gap:10px;min-height:72px}
+.piece-slot{width:100px;height:78px;background:rgba(255,255,255,.05);border-radius:12px;display:flex;align-items:center;justify-content:center;cursor:pointer;border:2px solid transparent;transition:border-color .15s,background .15s,transform .12s;position:relative}
+.piece-slot.selected{border-color:#ff9ec8;background:rgba(255,158,200,.12);transform:scale(1.04)}
+.piece-slot.empty{opacity:.35;pointer-events:none}
+.piece-grid{display:grid;gap:2px;pointer-events:none}
+.piece-cell{width:14px;height:14px;border-radius:3px;box-shadow:inset 0 -1px 0 rgba(0,0,0,.2)}
+
+/* Banner ad stub */
+.ad-banner{position:fixed;bottom:0;left:0;right:0;height:50px;background:linear-gradient(90deg,#555,#666,#555);display:flex;align-items:center;justify-content:center;z-index:100;font-size:.75rem;color:#bbb;letter-spacing:.5px;border-top:1px solid #777;max-width:420px;margin:0 auto}
+.ad-banner::before{content:"Ad · Banner";font-weight:600}
+
+/* Overlays */
+.overlay{position:fixed;inset:0;background:rgba(10,5,20,.88);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:200;padding:24px;text-align:center}
+.overlay.hidden{display:none}
+.overlay h2{font-size:1.8rem;margin-bottom:8px}
+.overlay p{color:#cbb8e0;margin-bottom:16px;font-size:.95rem}
+.ad-label{display:inline-block;background:#666;color:#ccc;padding:4px 12px;border-radius:6px;font-size:.7rem;margin-bottom:12px;letter-spacing:1px}
+.countdown{font-size:2.5rem;font-weight:800;color:#ffd56b;margin:12px 0}
+.milestone{font-size:.8rem;color:#4dffc4;margin-top:4px}
+
+/* Particles */
+#particles{position:fixed;inset:0;pointer-events:none;z-index:50;overflow:hidden}
+
+.piece-dragging{position:fixed;pointer-events:none;z-index:150;opacity:.9;transform:translate(-50%,-110%)}
+</style>
+</head>
+<body>
+<div id="app">
+  <!-- Start Screen -->
+  <div id="start-screen" class="screen">
+    <div class="logo">BlockPop</div>
+    <div class="tagline">Drop. Clear. One more round.</div>
+    <div class="howto">
+      <strong>How to play:</strong><br>
+      1. Pick a colorful block from the tray<br>
+      2. Tap (or drag) to place it on the board<br>
+      3. Fill a full row or column → clear &amp; score!<br>
+      4. Combos multiply your points. Don't get stuck!
+    </div>
+    <button class="btn btn-play" id="btn-play">Play</button>
+    <div class="best-badge" id="start-best">Best: 0</div>
+  </div>
+
+  <!-- Game Screen -->
+  <div id="game-screen" class="hidden">
+    <div class="hud">
+      <div class="score-box">
+        <div class="score-label">Score</div>
+        <div class="score-val" id="score">0</div>
+        <div class="best-mini" id="best-hud">Best 0</div>
+        <div class="milestone" id="milestone"></div>
+      </div>
+      <div class="hud-actions">
+        <button class="btn btn-hint" id="btn-hint" title="Watch ad for hint">💡 Hint</button>
+      </div>
+    </div>
+    <div class="combo-flash" id="combo-flash"></div>
+    <div class="board-wrap">
+      <div id="board"></div>
+    </div>
+    <div class="tray-area">
+      <div class="tray-label">Your blocks</div>
+      <div class="tray" id="tray"></div>
+    </div>
+  </div>
+
+  <!-- Interstitial Ad Stub -->
+  <div id="interstitial" class="overlay hidden">
+    <div class="ad-label">Ad · Interstitial</div>
+    <h2>Quick Break</h2>
+    <p>Thanks for playing BlockPop!<br><!-- TODO: TTMinis.game.createInterstitialAd / show --></p>
+    <div class="countdown" id="inter-count">2</div>
+    <button class="btn btn-play" id="btn-inter-continue" disabled style="opacity:.5">Continue</button>
+  </div>
+
+  <!-- Dead End / Revive -->
+  <div id="deadend" class="overlay hidden">
+    <h2>No moves!</h2>
+    <p>Score: <strong id="dead-score">0</strong></p>
+    <p id="revive-note" style="font-size:.85rem;color:#ffd56b">Watch an ad to shuffle your tray and keep going (1 per run)</p>
+    <button class="btn btn-revive" id="btn-revive">▶ Watch Ad to Revive</button>
+    <button class="btn btn-secondary" id="btn-endrun" style="margin-top:10px">End Run</button>
+  </div>
+
+  <!-- Rewarded Ad Stub -->
+  <div id="rewarded" class="overlay hidden">
+    <div class="ad-label">Ad · Rewarded Video</div>
+    <h2 id="rewarded-title">Watching Ad…</h2>
+    <p><!-- TODO: TTMinis.game.createRewardedVideoAd --></p>
+    <div class="countdown" id="reward-count">3</div>
+  </div>
+
+  <!-- Game Over -->
+  <div id="gameover" class="overlay hidden">
+    <h2>Game Over</h2>
+    <p>Score: <strong id="go-score">0</strong></p>
+    <p id="go-best" style="color:#ffd56b"></p>
+    <button class="btn btn-play" id="btn-again">Try Again</button>
+    <button class="btn btn-secondary" id="btn-home" style="margin-top:8px">Home</button>
+  </div>
+
+  <!-- Banner Ad Stub (persistent) -->
+  <div class="ad-banner" id="ad-banner" title="Banner ad placement"><!-- TODO: TTMinis.game.createBannerAd --></div>
+</div>
+<div id="particles"></div>
+<div id="drag-ghost" class="piece-dragging" style="display:none"></div>
+
+<script>
+// ============================================================
+// BlockPop — Drop. Clear. One more round.
+// Vanilla JS, file:// playable, IAA stubs for TikTok Mini Games
+// ============================================================
+
+(function () {
+  'use strict';
+
+  const GRID = 8;
+  const LS_BEST = 'blockpop_best';
+  const INTERSTITIAL_EVERY = 3; // every N line-clear events
+  const MILESTONES = [100, 250, 500, 1000, 2000, 5000];
+
+  // Candy palette
+  const COLORS = [
+    '#ff6b9d', // pink
+    '#c44dff', // purple
+    '#6b8cff', // blue
+    '#4dffc4', // mint
+    '#ffd56b', // yellow
+    '#ff9a3c', // orange
+    '#ff5e5e', // coral
+    '#7dff6b'  // lime
+  ];
+
+  // Classic polyomino shapes (relative cells [r,c])
+  const SHAPES = [
+    // monomino
+    [[0,0]],
+    // dominoes
+    [[0,0],[0,1]],
+    [[0,0],[1,0]],
+    // trominoes
+    [[0,0],[0,1],[0,2]],
+    [[0,0],[1,0],[2,0]],
+    [[0,0],[0,1],[1,0]],
+    [[0,0],[0,1],[1,1]],
+    [[0,1],[1,0],[1,1]],
+    [[0,0],[1,0],[1,1]],
+    // tetrominoes
+    [[0,0],[0,1],[0,2],[0,3]], // I
+    [[0,0],[1,0],[2,0],[3,0]],
+    [[0,0],[0,1],[1,0],[1,1]], // O
+    [[0,0],[1,0],[2,0],[2,1]], // L
+    [[0,1],[1,1],[2,0],[2,1]],
+    [[0,0],[0,1],[1,1],[2,1]],
+    [[0,0],[0,1],[1,0],[2,0]],
+    [[0,0],[1,0],[1,1],[1,2]], // T-ish / J
+    [[0,2],[1,0],[1,1],[1,2]],
+    [[0,0],[0,1],[0,2],[1,1]], // T
+    [[0,1],[1,0],[1,1],[1,2]],
+    [[0,0],[0,1],[1,0],[2,0]], // more L
+    [[0,0],[1,0],[2,0],[2,-1]],
+    // pentomino-lite (small)
+    [[0,0],[0,1],[0,2],[1,0],[1,2]], // U
+    [[0,1],[1,0],[1,1],[1,2],[2,1]]  // +
+  ];
+
+  // --- State ---
+  let grid = [];
+  let tray = [];
+  let selectedIdx = -1;
+  let score = 0;
+  let best = 0;
+  let lineClearEvents = 0;
+  let reviveUsed = false;
+  let gameActive = false;
+  let clearing = false;
+  let milestonesHit = new Set();
+  let lastPlace = null; // for potential undo (revive uses shuffle)
+
+  // --- DOM ---
+  const $ = (id) => document.getElementById(id);
+  const boardEl = $('board');
+  const trayEl = $('tray');
+  const scoreEl = $('score');
+  const bestHud = $('best-hud');
+  const startBest = $('start-best');
+  const comboFlash = $('combo-flash');
+  const milestoneEl = $('milestone');
+  const particlesEl = $('particles');
+  const dragGhost = $('drag-ghost');
+
+  // --- Init board cells ---
+  function buildBoard() {
+    boardEl.innerHTML = '';
+    for (let i = 0; i < GRID * GRID; i++) {
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      cell.dataset.r = Math.floor(i / GRID);
+      cell.dataset.c = i % GRID;
+      boardEl.appendChild(cell);
+    }
+  }
+
+  function emptyGrid() {
+    grid = Array.from({ length: GRID }, () => Array(GRID).fill(null));
+  }
+
+  function loadBest() {
+    try { best = parseInt(localStorage.getItem(LS_BEST) || '0', 10) || 0; } catch (e) { best = 0; }
+    startBest.textContent = 'Best: ' + best;
+    bestHud.textContent = 'Best ' + best;
+  }
+
+  function saveBest() {
+    if (score > best) {
+      best = score;
+      try { localStorage.setItem(LS_BEST, String(best)); } catch (e) {}
+    }
+    bestHud.textContent = 'Best ' + best;
+    startBest.textContent = 'Best: ' + best;
+  }
+
+  // --- Pieces ---
+  function randomShape() {
+    const shape = SHAPES[Math.floor(Math.random() * SHAPES.length)];
+    // Normalize to min r,c = 0
+    let minR = Infinity, minC = Infinity;
+    shape.forEach(([r, c]) => { minR = Math.min(minR, r); minC = Math.min(minC, c); });
+    const cells = shape.map(([r, c]) => [r - minR, c - minC]);
+    const color = COLORS[Math.floor(Math.random() * COLORS.length)];
+    return { cells, color };
+  }
+
+  function pieceBounds(cells) {
+    let maxR = 0, maxC = 0;
+    cells.forEach(([r, c]) => { maxR = Math.max(maxR, r); maxC = Math.max(maxC, c); });
+    return { rows: maxR + 1, cols: maxC + 1 };
+  }
+
+  function refillTray() {
+    tray = [randomShape(), randomShape(), randomShape()];
+    // Soft start bias: ensure at least one placeable if board not empty-heavy
+    if (!tray.some((p) => canPlaceAnywhere(p))) {
+      // try regenerate until at least one fits (max attempts)
+      for (let attempt = 0; attempt < 20; attempt++) {
+        tray = [randomShape(), randomShape(), randomShape()];
+        if (tray.some((p) => canPlaceAnywhere(p))) break;
+      }
+    }
+    selectedIdx = -1;
+    renderTray();
+  }
+
+  function canPlace(piece, r0, c0) {
+    if (!piece) return false;
+    for (const [dr, dc] of piece.cells) {
+      const r = r0 + dr, c = c0 + dc;
+      if (r < 0 || c < 0 || r >= GRID || c >= GRID) return false;
+      if (grid[r][c] !== null) return false;
+    }
+    return true;
+  }
+
+  function canPlaceAnywhere(piece) {
+    if (!piece) return false;
+    const { rows, cols } = pieceBounds(piece.cells);
+    for (let r = 0; r <= GRID - rows; r++) {
+      for (let c = 0; c <= GRID - cols; c++) {
+        if (canPlace(piece, r, c)) return true;
+      }
+    }
+    return false;
+  }
+
+  function anyTrayPlaceable() {
+    return tray.some((p) => p && canPlaceAnywhere(p));
+  }
+
+  function findHint() {
+    for (let i = 0; i < tray.length; i++) {
+      const p = tray[i];
+      if (!p) continue;
+      const { rows, cols } = pieceBounds(p.cells);
+      for (let r = 0; r <= GRID - rows; r++) {
+        for (let c = 0; c <= GRID - cols; c++) {
+          if (canPlace(p, r, c)) return { idx: i, r, c };
+        }
+      }
+    }
+    return null;
+  }
+
+  // --- Render ---
+  function renderBoard(ghostCells, ghostOk) {
+    const cells = boardEl.children;
+    for (let i = 0; i < GRID * GRID; i++) {
+      const r = Math.floor(i / GRID), c = i % GRID;
+      const el = cells[i];
+      el.classList.remove('ghost', 'ghost-bad', 'hint-glow');
+      if (grid[r][c]) {
+        el.classList.add('filled');
+        el.style.background = grid[r][c];
+      } else {
+        el.classList.remove('filled');
+        el.style.background = '';
+      }
+    }
+    if (ghostCells) {
+      ghostCells.forEach(([r, c]) => {
+        if (r < 0 || c < 0 || r >= GRID || c >= GRID) return;
+        const el = cells[r * GRID + c];
+        el.classList.add(ghostOk ? 'ghost' : 'ghost-bad');
+        if (ghostOk && selectedIdx >= 0 && tray[selectedIdx]) {
+          el.style.background = tray[selectedIdx].color;
+        }
+      });
+    }
+  }
+
+  function renderTray() {
+    trayEl.innerHTML = '';
+    tray.forEach((piece, idx) => {
+      const slot = document.createElement('div');
+      slot.className = 'piece-slot' + (piece ? '' : ' empty') + (idx === selectedIdx ? ' selected' : '');
+      slot.dataset.idx = idx;
+      if (piece) {
+        const { rows, cols } = pieceBounds(piece.cells);
+        const g = document.createElement('div');
+        g.className = 'piece-grid';
+        g.style.gridTemplateColumns = 'repeat(' + cols + ', 14px)';
+        g.style.gridTemplateRows = 'repeat(' + rows + ', 14px)';
+        const set = new Set(piece.cells.map(([r, c]) => r + ',' + c));
+        for (let r = 0; r < rows; r++) {
+          for (let c = 0; c < cols; c++) {
+            const cell = document.createElement('div');
+            if (set.has(r + ',' + c)) {
+              cell.className = 'piece-cell';
+              cell.style.background = piece.color;
+            } else {
+              cell.style.width = '14px';
+              cell.style.height = '14px';
+            }
+            g.appendChild(cell);
+          }
+        }
+        slot.appendChild(g);
+      }
+      trayEl.appendChild(slot);
+    });
+  }
+
+  function updateScoreUI() {
+    scoreEl.textContent = String(score);
+    for (const m of MILESTONES) {
+      if (score >= m && !milestonesHit.has(m)) {
+        milestonesHit.add(m);
+        milestoneEl.textContent = '★ Milestone ' + m + '!';
+        setTimeout(() => { if (milestoneEl.textContent.indexOf(String(m)) >= 0) milestoneEl.textContent = ''; }, 2500);
+      }
+    }
+  }
+
+  // --- Place & Clear ---
+  function placePiece(idx, r0, c0) {
+    const piece = tray[idx];
+    if (!piece || !canPlace(piece, r0, c0) || clearing) return false;
+
+    lastPlace = { idx, r0, c0, piece: { cells: piece.cells.slice(), color: piece.color }, gridSnap: grid.map((row) => row.slice()) };
+
+    piece.cells.forEach(([dr, dc]) => {
+      grid[r0 + dr][c0 + dc] = piece.color;
+    });
+    tray[idx] = null;
+    selectedIdx = -1;
+    score += piece.cells.length; // base points for placement
+    updateScoreUI();
+    renderTray();
+    renderBoard();
+
+    // Check lines
+    const fullRows = [];
+    const fullCols = [];
+    for (let r = 0; r < GRID; r++) {
+      if (grid[r].every((v) => v !== null)) fullRows.push(r);
+    }
+    for (let c = 0; c < GRID; c++) {
+      let full = true;
+      for (let r = 0; r < GRID; r++) if (grid[r][c] === null) { full = false; break; }
+      if (full) fullCols.push(c);
+    }
+
+    const lines = fullRows.length + fullCols.length;
+    if (lines > 0) {
+      animateClear(fullRows, fullCols, lines);
+    } else {
+      afterPlace();
+    }
+    return true;
+  }
+
+  function animateClear(fullRows, fullCols, lines) {
+    clearing = true;
+    const cells = boardEl.children;
+    const toClear = new Set();
+    fullRows.forEach((r) => { for (let c = 0; c < GRID; c++) toClear.add(r + ',' + c); });
+    fullCols.forEach((c) => { for (let r = 0; r < GRID; r++) toClear.add(r + ',' + c); });
+
+    toClear.forEach((key) => {
+      const [r, c] = key.split(',').map(Number);
+      cells[r * GRID + c].classList.add('clearing');
+    });
+
+    // Combo text
+    let msg = 'CLEAR!';
+    let mult = 1;
+    if (lines === 2) { msg = 'COMBO x2'; mult = 2; }
+    else if (lines === 3) { msg = 'COMBO x3'; mult = 3; }
+    else if (lines >= 4) { msg = 'COMBO x' + lines + '!'; mult = lines; }
+    showCombo(msg);
+    spawnParticles(toClear);
+
+    const base = 10 * lines;
+    const bonus = lines > 1 ? base * (mult - 1) : 0;
+    score += base + bonus + toClear.size * 2;
+    updateScoreUI();
+    saveBest();
+
+    lineClearEvents++;
+
+    setTimeout(() => {
+      toClear.forEach((key) => {
+        const [r, c] = key.split(',').map(Number);
+        grid[r][c] = null;
+      });
+      // Also clear any cells that were in both — already null
+      clearing = false;
+      renderBoard();
+      // Interstitial every N clear events
+      if (lineClearEvents > 0 && lineClearEvents % INTERSTITIAL_EVERY === 0) {
+        showInterstitial(() => afterPlace());
+      } else {
+        afterPlace();
+      }
+    }, 360);
+  }
+
+  function afterPlace() {
+    const remaining = tray.filter(Boolean).length;
+    if (remaining === 0) {
+      refillTray();
+    } else {
+      renderTray();
+    }
+    if (!anyTrayPlaceable()) {
+      showDeadEnd();
+    }
+  }
+
+  function showCombo(text) {
+    comboFlash.textContent = text;
+    comboFlash.classList.remove('show');
+    void comboFlash.offsetWidth;
+    comboFlash.classList.add('show');
+  }
+
+  function spawnParticles(cellKeys) {
+    const boardRect = boardEl.getBoundingClientRect();
+    const cellSize = boardRect.width / GRID;
+    cellKeys.forEach((key) => {
+      const [r, c] = key.split(',').map(Number);
+      const color = COLORS[Math.floor(Math.random() * COLORS.length)];
+      for (let i = 0; i < 4; i++) {
+        const p = document.createElement('div');
+        p.style.cssText = 'position:absolute;width:6px;height:6px;border-radius:50%;background:' + color +
+          ';left:' + (boardRect.left + c * cellSize + cellSize / 2) + 'px;top:' + (boardRect.top + r * cellSize + cellSize / 2) + 'px;' +
+          'pointer-events:none;transition:transform .5s ease-out,opacity .5s';
+        particlesEl.appendChild(p);
+        const ang = Math.random() * Math.PI * 2;
+        const dist = 30 + Math.random() * 50;
+        requestAnimationFrame(() => {
+          p.style.transform = 'translate(' + Math.cos(ang) * dist + 'px,' + Math.sin(ang) * dist + 'px) scale(0)';
+          p.style.opacity = '0';
+        });
+        setTimeout(() => p.remove(), 550);
+      }
+    });
+  }
+
+  // --- Ads stubs ---
+  /**
+   * showRewardedAd(onSuccess)
+   * Simulated rewarded video with 3s countdown.
+   * TODO: TTMinis.game.createRewardedVideoAd
+   * TODO: TTMinis.game.* show rewarded, listen onClose / isEnded
+   */
+  function showRewardedAd(onSuccess) {
+    const ov = $('rewarded');
+    const countEl = $('reward-count');
+    ov.classList.remove('hidden');
+    let n = 3;
+    countEl.textContent = String(n);
+    const t = setInterval(() => {
+      n--;
+      countEl.textContent = String(n);
+      if (n <= 0) {
+        clearInterval(t);
+        ov.classList.add('hidden');
+        if (typeof onSuccess === 'function') onSuccess();
+      }
+    }, 1000);
+  }
+
+  /**
+   * Interstitial after every INTERSTITIAL_EVERY line-clear events
+   * TODO: TTMinis.game.createInterstitialAd
+   */
+  function showInterstitial(onDone) {
+    const ov = $('interstitial');
+    const countEl = $('inter-count');
+    const btn = $('btn-inter-continue');
+    ov.classList.remove('hidden');
+    btn.disabled = true;
+    btn.style.opacity = '.5';
+    let n = 2;
+    countEl.textContent = String(n);
+    const t = setInterval(() => {
+      n--;
+      countEl.textContent = String(n);
+      if (n <= 0) {
+        clearInterval(t);
+        btn.disabled = false;
+        btn.style.opacity = '1';
+      }
+    }, 1000);
+    btn.onclick = () => {
+      ov.classList.add('hidden');
+      btn.onclick = null;
+      if (onDone) onDone();
+    };
+  }
+
+  function showDeadEnd() {
+    gameActive = false;
+    $('dead-score').textContent = String(score);
+    const reviveBtn = $('btn-revive');
+    const note = $('revive-note');
+    if (reviveUsed) {
+      reviveBtn.style.display = 'none';
+      note.textContent = 'Revive already used this run. End Run to try again.';
+    } else {
+      reviveBtn.style.display = 'block';
+      note.textContent = 'Watch an ad to shuffle your tray and keep going (1 per run)';
+    }
+    $('deadend').classList.remove('hidden');
+  }
+
+  // Revive mechanic: SHUFFLE TRAY with fresh placeable pieces
+  // (Documented: shuffle tray — regenerate 3 pieces biased to be placeable)
+  function doRevive() {
+    reviveUsed = true;
+    $('deadend').classList.add('hidden');
+    // Clear one random filled row OR col if board is dense, else just shuffle
+    const filledRows = [];
+    for (let r = 0; r < GRID; r++) {
+      if (grid[r].some((v) => v !== null)) filledRows.push(r);
+    }
+    if (filledRows.length > 0) {
+      // Primary revive: shuffle tray (always). Bonus: clear one random row with any blocks to create space.
+      const rr = filledRows[Math.floor(Math.random() * filledRows.length)];
+      for (let c = 0; c < GRID; c++) grid[rr][c] = null;
+    }
+    // Force placeable tray
+    for (let attempt = 0; attempt < 40; attempt++) {
+      tray = [randomShape(), randomShape(), randomShape()];
+      if (tray.some((p) => canPlaceAnywhere(p))) break;
+    }
+    selectedIdx = -1;
+    renderTray();
+    renderBoard();
+    gameActive = true;
+    showCombo('REVIVED!');
+  }
+
+  function endRun() {
+    $('deadend').classList.add('hidden');
+    saveBest();
+    $('go-score').textContent = String(score);
+    $('go-best').textContent = score >= best ? 'New best!' : 'Best: ' + best;
+    $('gameover').classList.remove('hidden');
+  }
+
+  function startGame() {
+    emptyGrid();
+    score = 0;
+    lineClearEvents = 0;
+    reviveUsed = false;
+    milestonesHit = new Set();
+    clearing = false;
+    gameActive = true;
+    selectedIdx = -1;
+    updateScoreUI();
+    milestoneEl.textContent = '';
+    loadBest();
+    buildBoard();
+    renderBoard();
+    // Soft start: prefer smaller pieces first round
+    tray = [];
+    const small = SHAPES.filter((s) => s.length <= 3);
+    for (let i = 0; i < 3; i++) {
+      const shape = small[Math.floor(Math.random() * small.length)];
+      let minR = Infinity, minC = Infinity;
+      shape.forEach(([r, c]) => { minR = Math.min(minR, r); minC = Math.min(minC, c); });
+      tray.push({
+        cells: shape.map(([r, c]) => [r - minR, c - minC]),
+        color: COLORS[Math.floor(Math.random() * COLORS.length)]
+      });
+    }
+    renderTray();
+    $('start-screen').classList.add('hidden');
+    $('gameover').classList.add('hidden');
+    $('deadend').classList.add('hidden');
+    $('interstitial').classList.add('hidden');
+    $('rewarded').classList.add('hidden');
+    $('game-screen').classList.remove('hidden');
+  }
+
+  function goHome() {
+    $('gameover').classList.add('hidden');
+    $('game-screen').classList.add('hidden');
+    $('start-screen').classList.remove('hidden');
+    loadBest();
+  }
+
+  // --- Input: tap select + tap place, drag ---
+  let dragIdx = -1;
+  let ghostPos = null;
+
+  function cellFromPoint(x, y) {
+    const rect = boardEl.getBoundingClientRect();
+    if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) return null;
+    const c = Math.floor((x - rect.left) / rect.width * GRID);
+    const r = Math.floor((y - rect.top) / rect.height * GRID);
+    if (r < 0 || c < 0 || r >= GRID || c >= GRID) return null;
+    return { r, c };
+  }
+
+  function ghostCellsAt(piece, r0, c0) {
+    return piece.cells.map(([dr, dc]) => [r0 + dr, c0 + dc]);
+  }
+
+  // Anchor: place so finger is near center of piece
+  function anchorOffset(piece) {
+    const { rows, cols } = pieceBounds(piece.cells);
+    return { ar: Math.floor(rows / 2), ac: Math.floor(cols / 2) };
+  }
+
+  trayEl.addEventListener('click', (e) => {
+    if (!gameActive || clearing) return;
+    const slot = e.target.closest('.piece-slot');
+    if (!slot || slot.classList.contains('empty')) return;
+    const idx = parseInt(slot.dataset.idx, 10);
+    selectedIdx = selectedIdx === idx ? -1 : idx;
+    renderTray();
+    renderBoard();
+  });
+
+  boardEl.addEventListener('click', (e) => {
+    if (!gameActive || clearing || selectedIdx < 0) return;
+    const cell = e.target.closest('.cell');
+    if (!cell) return;
+    const r = parseInt(cell.dataset.r, 10);
+    const c = parseInt(cell.dataset.c, 10);
+    const piece = tray[selectedIdx];
+    if (!piece) return;
+    // Try place with top-left at clicked cell; also try centered
+    if (canPlace(piece, r, c)) {
+      placePiece(selectedIdx, r, c);
+      return;
+    }
+    const { ar, ac } = anchorOffset(piece);
+    const r0 = r - ar, c0 = c - ac;
+    if (canPlace(piece, r0, c0)) {
+      placePiece(selectedIdx, r0, c0);
+    }
+  });
+
+  // Hover ghost (mouse)
+  boardEl.addEventListener('mousemove', (e) => {
+    if (!gameActive || selectedIdx < 0 || !tray[selectedIdx]) {
+      renderBoard();
+      return;
+    }
+    const pos = cellFromPoint(e.clientX, e.clientY);
+    if (!pos) { renderBoard(); return; }
+    const piece = tray[selectedIdx];
+    let r0 = pos.r, c0 = pos.c;
+    if (!canPlace(piece, r0, c0)) {
+      const { ar, ac } = anchorOffset(piece);
+      r0 = pos.r - ar;
+      c0 = pos.c - ac;
+    }
+    const ok = canPlace(piece, r0, c0);
+    renderBoard(ghostCellsAt(piece, r0, c0), ok);
+  });
+
+  boardEl.addEventListener('mouseleave', () => renderBoard());
+
+  // Touch / drag from tray
+  function onPointerDown(e) {
+    if (!gameActive || clearing) return;
+    const slot = e.target.closest('.piece-slot');
+    if (!slot || slot.classList.contains('empty')) return;
+    const idx = parseInt(slot.dataset.idx, 10);
+    if (!tray[idx]) return;
+    selectedIdx = idx;
+    dragIdx = idx;
+    renderTray();
+    const piece = tray[idx];
+    const { rows, cols } = pieceBounds(piece.cells);
+    dragGhost.innerHTML = '';
+    const g = document.createElement('div');
+    g.className = 'piece-grid';
+    g.style.gridTemplateColumns = 'repeat(' + cols + ', 18px)';
+    const set = new Set(piece.cells.map(([r, c]) => r + ',' + c));
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const cell = document.createElement('div');
+        cell.style.width = '18px';
+        cell.style.height = '18px';
+        cell.style.borderRadius = '4px';
+        if (set.has(r + ',' + c)) cell.style.background = piece.color;
+        g.appendChild(cell);
+      }
+    }
+    dragGhost.appendChild(g);
+    dragGhost.style.display = 'block';
+    const pt = e.touches ? e.touches[0] : e;
+    dragGhost.style.left = pt.clientX + 'px';
+    dragGhost.style.top = pt.clientY + 'px';
+    e.preventDefault();
+  }
+
+  function onPointerMove(e) {
+    if (dragIdx < 0) return;
+    const pt = e.touches ? e.touches[0] : e;
+    dragGhost.style.left = pt.clientX + 'px';
+    dragGhost.style.top = pt.clientY + 'px';
+    const piece = tray[dragIdx];
+    if (!piece) return;
+    const pos = cellFromPoint(pt.clientX, pt.clientY);
+    if (!pos) { renderBoard(); return; }
+    const { ar, ac } = anchorOffset(piece);
+    const r0 = pos.r - ar, c0 = pos.c - ac;
+    const ok = canPlace(piece, r0, c0);
+    renderBoard(ghostCellsAt(piece, r0, c0), ok);
+    e.preventDefault();
+  }
+
+  function onPointerUp(e) {
+    if (dragIdx < 0) return;
+    const pt = e.changedTouches ? e.changedTouches[0] : e;
+    const piece = tray[dragIdx];
+    dragGhost.style.display = 'none';
+    if (piece) {
+      const pos = cellFromPoint(pt.clientX, pt.clientY);
+      if (pos) {
+        const { ar, ac } = anchorOffset(piece);
+        const r0 = pos.r - ar, c0 = pos.c - ac;
+        if (canPlace(piece, r0, c0)) {
+          placePiece(dragIdx, r0, c0);
+        } else if (canPlace(piece, pos.r, pos.c)) {
+          placePiece(dragIdx, pos.r, pos.c);
+        }
+      }
+    }
+    dragIdx = -1;
+    renderBoard();
+  }
+
+  trayEl.addEventListener('mousedown', onPointerDown);
+  document.addEventListener('mousemove', onPointerMove);
+  document.addEventListener('mouseup', onPointerUp);
+  trayEl.addEventListener('touchstart', onPointerDown, { passive: false });
+  document.addEventListener('touchmove', onPointerMove, { passive: false });
+  document.addEventListener('touchend', onPointerUp);
+
+  // Hint button — rewarded stub
+  $('btn-hint').addEventListener('click', () => {
+    if (!gameActive || clearing) return;
+    // TODO: TTMinis.game.createRewardedVideoAd (hint)
+    showRewardedAd(() => {
+      const hint = findHint();
+      if (!hint) {
+        showCombo('No hint');
+        return;
+      }
+      selectedIdx = hint.idx;
+      renderTray();
+      const piece = tray[hint.idx];
+      const cells = boardEl.children;
+      piece.cells.forEach(([dr, dc]) => {
+        const el = cells[(hint.r + dr) * GRID + (hint.c + dc)];
+        el.classList.add('hint-glow');
+        el.style.background = piece.color;
+        el.style.opacity = '0.55';
+      });
+      showCombo('HINT!');
+      setTimeout(() => {
+        piece.cells.forEach(([dr, dc]) => {
+          const el = cells[(hint.r + dr) * GRID + (hint.c + dc)];
+          el.style.opacity = '';
+        });
+        renderBoard(ghostCellsAt(piece, hint.r, hint.c), true);
+      }, 1200);
+    });
+  });
+
+  // Buttons
+  $('btn-play').addEventListener('click', startGame);
+  $('btn-again').addEventListener('click', startGame);
+  $('btn-home').addEventListener('click', goHome);
+  $('btn-endrun').addEventListener('click', endRun);
+  $('btn-revive').addEventListener('click', () => {
+    if (reviveUsed) return;
+    // TODO: TTMinis.game.createRewardedVideoAd
+    showRewardedAd(doRevive);
+  });
+
+  // Boot
+  buildBoard();
+  loadBest();
+
+  // Export for playtest (node can eval logic separately)
+  window.BlockPop = {
+    GRID, SHAPES, canPlace, canPlaceAnywhere, pieceBounds,
+    // test helpers
+    _test: { emptyGrid, getGrid: () => grid, setGrid: (g) => { grid = g; }, getTray: () => tray, setTray: (t) => { tray = t; } }
+  };
+})();
+</script>
+</body>
+</html>
