@@ -1,3 +1,11 @@
 .DS_Store
 *.log
 node_modules/
+
+# Cocos Creator generated
+cocos/library/
+cocos/temp/
+cocos/local/
+cocos/build/
+cocos/profiles/
+cocos/native/
