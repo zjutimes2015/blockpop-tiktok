@@ -9,7 +9,7 @@ Open **this `cocos/` folder** (not the repo root) in Creator.
 ## Open & preview
 
 1. Install [Cocos Creator 3.8.8](https://www.cocos.com/creator-download).
-2. **Cocos Dashboard → Open** → select `cocos/`.
+2. **Cocos Dashboard → Open** → select `cocos/` (folder with `project.json` + `package.json` + `assets/`).
 3. Open scene `assets/scenes/main.scene`.
 4. Click **Preview** (browser or simulator). You should see the candy-purple start screen (not a black view): Canvas + orthographic UI camera, `SOLID_COLOR` clear `#1a0a2e`, UI_2D layer.
 5. **Play** → 8×8 board, 3-piece tray, tap/drag to place.

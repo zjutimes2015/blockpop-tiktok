@@ -62,7 +62,10 @@ console.log('\n=== Project files ===');
 {
   const required = [
     'package.json',
+    'project.json',
+    'assets.meta',
     'tsconfig.json',
+    'tsconfig.editor.json',
     '.gitignore',
     'README.md',
     'WECHAT.md',
@@ -76,6 +79,7 @@ console.log('\n=== Project files ===');
     'assets/scripts/WxAdapter.ts',
     'settings/v2/packages/project.json',
     'settings/v2/packages/engine.json',
+    'settings/v2/packages/cocos-service.json',
   ];
   for (const f of required) {
     assert(fs.existsSync(path.join(root, f)), 'exists ' + f);
@@ -86,6 +90,14 @@ console.log('\n=== Creator 3.8.8 + scene camera ===');
 {
   const pkg = JSON.parse(read('package.json'));
   assert(pkg.creator && pkg.creator.version === '3.8.8', 'package.json creator 3.8.8');
+  const project = JSON.parse(read('project.json'));
+  assert(project.version === '3.8.8', 'root project.json version 3.8.8');
+  assert(project.engine === 'cocos-creator-js', 'root project.json engine cocos-creator-js');
+  assert(project.id === pkg.uuid, 'project.json id matches package.json uuid');
+  const assetsMeta = JSON.parse(read('assets.meta'));
+  assert(assetsMeta.importer === 'directory' && !!assetsMeta.uuid, 'assets.meta is a directory meta');
+  const editorTs = JSON.parse(read('tsconfig.editor.json'));
+  assert(Array.isArray(editorTs.include) && editorTs.include.join(',').includes('assets/**/*.ts'), 'tsconfig.editor.json includes assets scripts');
   const scene = read('assets/scenes/main.scene');
   assert(scene.includes('"__type__": "cc.Canvas"'), 'main.scene has Canvas');
   assert(scene.includes('"__type__": "cc.Camera"'), 'main.scene has Camera');

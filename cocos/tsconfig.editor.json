@@ -1,0 +1,11 @@
+{
+  "compilerOptions": {
+    "target": "ES2015",
+    "module": "ES2015",
+    "strict": false,
+    "experimentalDecorators": true,
+    "skipLibCheck": true,
+    "lib": ["ES2015", "DOM"]
+  },
+  "include": ["assets/**/*.ts"]
+}

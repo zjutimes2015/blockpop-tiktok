@@ -1,10 +1,15 @@
 {
-  /* Base configuration. Do not edit this field. */
   "extends": "./temp/tsconfig.cocos.json",
-
-  /* Add your custom configuration here. */
   "compilerOptions": {
     "strict": false,
-    "lib": ["es2017", "dom"]
+    "target": "ES2015",
+    "module": "ES2015",
+    "lib": ["ES2015", "DOM"],
+    "types": [
+      "../temp/declarations/cc",
+      "../temp/declarations/cc.custom-macro",
+      "../temp/declarations/jsb",
+      "../temp/declarations/cc.env"
+    ]
   }
 }
