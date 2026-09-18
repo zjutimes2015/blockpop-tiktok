@@ -1,0 +1,9 @@
+{
+  "engine": "cocos-creator-js",
+  "packages": "packages",
+  "name": "blockpop-cocos",
+  "id": "8c3e5c01-0000-4000-8000-b10c8b0c0001",
+  "version": "3.8.8",
+  "isNew": false,
+  "description": "BlockPop Cocos Creator 3.8 WeChat mini game"
+}
