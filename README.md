@@ -67,14 +67,19 @@ function showRewardedAd(onSuccess) { /* simulated countdown → onSuccess() */ }
 
 | File | Purpose |
 |------|---------|
-| `index.html` | Full game |
+| `index.html` | Full HTML5 prototype |
 | `playtest.mjs` | Placement / clear / dead-end / stub checks |
 | `PLAYTEST.md` | Verdict log |
 | `README.md` | This file |
+| `cocos/` | **Cocos Creator 3.8.8 + TypeScript** project (微信小游戏) |
+
+### Cocos Creator (微信小游戏)
+
+A runtime-UI port lives in [`cocos/`](./cocos/README.md). Open **that folder** in Creator 3.8.8, preview `main.scene`, then follow [`cocos/WECHAT.md`](./cocos/WECHAT.md) to export 微信小游戏 and replace placeholder `adUnitId`s.
 
 ```bash
 node playtest.mjs
-# optional: extract script and node --check
+node cocos/playtest.mjs
 ```
 
 ---
