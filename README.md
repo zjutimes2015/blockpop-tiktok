@@ -75,11 +75,12 @@ function showRewardedAd(onSuccess) { /* simulated countdown → onSuccess() */ }
 
 ### Cocos Creator (微信小游戏)
 
-A runtime-UI port lives in [`cocos/`](./cocos/README.md). Open **that folder** in Creator 3.8.8, preview `main.scene`, then follow [`cocos/WECHAT.md`](./cocos/WECHAT.md) to export 微信小游戏 and replace placeholder `adUnitId`s.
+A runtime-UI port lives in [`cocos/`](./cocos/README.md). Open **that folder** in Creator 3.8.8, preview `main.scene` (`Scene → Canvas → GameController`). You should see the start screen (not a blank clear-color). Follow [`cocos/WECHAT.md`](./cocos/WECHAT.md) to export 微信小游戏 (`wechatgame`, portrait, `touristappid`, output `build/wechatgame`) and replace placeholder `adUnitId`s.
 
 ```bash
 node playtest.mjs
 node cocos/playtest.mjs
+node cocos/tools/verify-boot.mjs
 ```
 
 ---

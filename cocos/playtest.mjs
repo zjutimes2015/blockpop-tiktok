@@ -80,6 +80,8 @@ console.log('\n=== Project files ===');
     'settings/v2/packages/project.json',
     'settings/v2/packages/engine.json',
     'settings/v2/packages/cocos-service.json',
+    'settings/v2/packages/builder.json',
+    'tools/verify-boot.mjs',
   ];
   for (const f of required) {
     assert(fs.existsSync(path.join(root, f)), 'exists ' + f);
@@ -107,8 +109,10 @@ console.log('\n=== Creator 3.8.8 + scene camera ===');
   assert(/"_alignCanvasWithScreen":\s*true/.test(scene), 'Canvas aligned with screen');
   assert(scene.includes('"_cameraComponent"'), 'Canvas wired to Camera');
   assert(/"_layer":\s*33554432/.test(scene), 'Canvas/Camera UI_2D layer');
-  assert(/"_visibility":\s*41943040/.test(scene), 'Camera visibility includes UI_2D');
-  assert(scene.includes('8c3e5wBIAFCAYIBAAAAAAAB'), 'GameManager component attached');
+  assert(/"_visibility":\s*33554432/.test(scene), 'Camera visibility is UI_2D');
+  assert(scene.includes('8c3e5wBIAFCAYIBAAAAAAAB'), 'GameManager compressed CID attached');
+  assert(scene.includes('"GameController"'), 'GameController node exists');
+  assert(scene.includes('"BoardRoot"') && scene.includes('"UIRoot"'), 'BoardRoot + UIRoot exist');
 }
 
 console.log('\n=== Safe project settings ===');
@@ -181,6 +185,14 @@ console.log('\n=== Source port / IAA ===');
   const wx = read('assets/scripts/WxAdapter.ts');
   const ui = read('assets/scripts/UIManager.ts');
   const cfg = read('assets/scripts/core/AdConfig.ts');
+  const wechat = read('WECHAT.md');
+  const boardSrc = read('assets/scripts/BoardManager.ts');
+  const gmNoComments = gm.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/\/\/.*$/gm, ' ');
+  assert(!/\bfind\s*\(/.test(gmNoComments), 'GameManager does not call find()');
+  assert(gm.includes("boot('onLoad', false)") && gm.includes("boot('start', true)"), 'onLoad + start() boot retry');
+  assert(gm.includes('ensureHierarchy') && gm.includes('getChildByName'), 'roots from ensureHierarchy / getChildByName');
+  assert(boardSrc.includes('const box =') && !/const box = [\s\S]*const box = /.test(boardSrc), 'BoardManager has no duplicate box');
+  assert(wechat.includes('wechatgame') && wechat.includes('touristappid') && wechat.includes('build/wechatgame'), 'WECHAT.md wechatgame export');
   assert(logic.includes('softStartTray'), 'soft-start tray');
   assert(logic.includes('refillTray'), 'refill anti-softlock');
   assert(logic.includes('reviveTray'), 'revive shuffle + clear row');

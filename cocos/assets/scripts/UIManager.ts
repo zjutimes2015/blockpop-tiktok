@@ -79,18 +79,42 @@ export class UIManager extends Component implements AdHost {
     private _interTimer = 0;
     private _rewardTimer = 0;
 
-    public build(canvas: Node): void {
-        this.root = canvas;
-        this.paintBackground(canvas);
+    public setUIRoot(root: Node): void {
+        this.root = root;
+    }
 
-        this.gameScreen = createNode('GameScreen', canvas, DESIGN_WIDTH, DESIGN_HEIGHT);
+    public setBoardHost(host: Node): void {
+        this.boardHost = host;
+    }
+
+    public hasPlayUI(): boolean {
+        const live = (n: Node | null) => !!(n && n.isValid !== false && n.parent);
+        return live(this.startScreen) && live(this.boardHost) && live(this.trayHost);
+    }
+
+    public build(): void {
+        if (!this.root) {
+            console.error('[UIManager] build skipped: uiRoot is null');
+            return;
+        }
+        if (this.hasPlayUI()) {
+            console.log('[UIManager] build: play UI already present');
+            return;
+        }
+
+        const ui = this.root;
+        this.paintBackground(ui);
+
+        this.gameScreen = createNode('GameScreen', ui, DESIGN_WIDTH, DESIGN_HEIGHT);
         alignFull(this.gameScreen);
         this.hudLayer = createNode('HUD', this.gameScreen, DESIGN_WIDTH - 32, 120);
         alignTopBar(this.hudLayer, 16, 16, 16, 120);
         this.buildHud(this.hudLayer);
 
-        this.boardHost = createNode('BoardHost', this.gameScreen, 640, 640);
-        const boardWidget = this.boardHost.addComponent(Widget);
+        if (!this.boardHost) {
+            this.boardHost = createNode('BoardHost', this.gameScreen, 640, 640);
+        }
+        const boardWidget = this.boardHost.getComponent(Widget) || this.boardHost.addComponent(Widget);
         boardWidget.isAlignTop = true;
         boardWidget.isAlignBottom = true;
         boardWidget.isAlignLeft = true;
@@ -110,14 +134,14 @@ export class UIManager extends Component implements AdHost {
         this.comboLabel.node.setPosition(0, 220, 0);
         setOpacity(this.comboLabel.node, 0);
 
-        this.particleLayer = createNode('Particles', canvas, DESIGN_WIDTH, DESIGN_HEIGHT);
+        this.particleLayer = createNode('Particles', ui, DESIGN_WIDTH, DESIGN_HEIGHT);
         alignFull(this.particleLayer);
 
-        this.startScreen = createNode('StartScreen', canvas, DESIGN_WIDTH, DESIGN_HEIGHT);
+        this.startScreen = createNode('StartScreen', ui, DESIGN_WIDTH, DESIGN_HEIGHT);
         alignFull(this.startScreen);
         this.buildStart(this.startScreen);
 
-        this.overlayLayer = createNode('Overlays', canvas, DESIGN_WIDTH, DESIGN_HEIGHT);
+        this.overlayLayer = createNode('Overlays', ui, DESIGN_WIDTH, DESIGN_HEIGHT);
         alignFull(this.overlayLayer);
 
         this.deadend = this.makeOverlay('DeadEnd');
@@ -129,21 +153,32 @@ export class UIManager extends Component implements AdHost {
         this.gameover = this.makeOverlay('GameOver');
         this.buildGameover(this.gameover);
 
-        this.banner = createNode('Banner', canvas, DESIGN_WIDTH, BANNER_HEIGHT);
+        this.banner = createNode('Banner', ui, DESIGN_WIDTH, BANNER_HEIGHT);
         alignBottomBar(this.banner, 0, 0, 0, BANNER_HEIGHT);
         paintPanel(this.banner, hexToColor('#555555'), 0);
         createLabel('BannerTxt', this.banner, 'Ad · Banner', 18, hexToColor('#bbbbbb'), DESIGN_WIDTH, 40, true);
 
+        if (this.hasPlayUI()) {
+            console.log('[UIManager] build SUCCESS — StartScreen + BoardHost + TrayHost under', ui.name);
+        } else {
+            console.error('[UIManager] build FAILED — play UI missing after build');
+        }
         this.showScreen('start');
     }
 
     public showScreen(name: ScreenName | 'none'): void {
-        setActive(this.startScreen!, name === 'start');
-        setActive(this.gameScreen!, name === 'game' || name === 'deadend' || name === 'gameover' || name === 'interstitial' || name === 'rewarded');
-        setActive(this.deadend!, name === 'deadend');
-        setActive(this.gameover!, name === 'gameover');
-        setActive(this.interstitial!, name === 'interstitial');
-        setActive(this.rewarded!, name === 'rewarded');
+        if (this.startScreen) setActive(this.startScreen, name === 'start');
+        if (this.gameScreen) {
+            setActive(this.gameScreen, name === 'game' || name === 'deadend' || name === 'gameover' || name === 'interstitial' || name === 'rewarded');
+        }
+        // BoardRoot is a Canvas sibling (from ensureHierarchy), so hide it with the start overlay.
+        if (this.boardHost && this.gameScreen && this.boardHost.parent !== this.gameScreen) {
+            this.boardHost.active = name !== 'start' && name !== 'none';
+        }
+        if (this.deadend) setActive(this.deadend, name === 'deadend');
+        if (this.gameover) setActive(this.gameover, name === 'gameover');
+        if (this.interstitial) setActive(this.interstitial, name === 'interstitial');
+        if (this.rewarded) setActive(this.rewarded, name === 'rewarded');
     }
 
     public setScore(score: number): void {
@@ -299,7 +334,7 @@ export class UIManager extends Component implements AdHost {
     private buildStart(root: Node): void {
         blockInput(root);
         const dim = root.addComponent(Graphics);
-        fillRoundRect(dim, -DESIGN_WIDTH / 2, -DESIGN_HEIGHT / 2, DESIGN_WIDTH, DESIGN_HEIGHT, 0, hexToColor(COLOR_BG, 0));
+        fillRoundRect(dim, -DESIGN_WIDTH / 2, -DESIGN_HEIGHT / 2, DESIGN_WIDTH, DESIGN_HEIGHT, 0, hexToColor(COLOR_BG, 255));
 
         const logo = createLabel('Logo', root, 'BlockPop', 72, hexToColor(COLOR_PINK), 640, 90, true);
         logo.node.setPosition(0, 360, 0);

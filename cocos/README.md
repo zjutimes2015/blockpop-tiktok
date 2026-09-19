@@ -11,8 +11,15 @@ Open **this `cocos/` folder** (not the repo root) in Creator.
 1. Install [Cocos Creator 3.8.8](https://www.cocos.com/creator-download).
 2. **Cocos Dashboard → Open** → select `cocos/` (folder with `project.json` + `package.json` + `assets/`).
 3. Open scene `assets/scenes/main.scene`.
-4. Click **Preview** (browser or simulator). You should see the candy-purple start screen (not a black view): Canvas + orthographic UI camera, `SOLID_COLOR` clear `#1a0a2e`, UI_2D layer.
-5. **Play** → 8×8 board, 3-piece tray, tap/drag to place.
+4. Hierarchy: `Scene → Canvas → Camera / BoardRoot / UIRoot / GameController`.
+5. Click **▶ Preview** (browser). You should see the candy-purple **BlockPop start screen + Play** (not a blank clear-color view). Console: `[GameManager] boot(onLoad|start) SUCCESS`.
+6. **Play** → **8×8 board + 3-piece tray**, tap/drag to place.
+
+> `GameController` **must be under Canvas** (not a Scene sibling). The scene mounts only `cc.UITransform` (1×1) + `GameManager` (23-char compressed CID from `GameManager.ts.meta`). `BoardManager` / `PieceTray` / `UIManager` / `AdBridge` are `addComponent` siblings at runtime.
+>
+> `boot()` wires `BoardRoot` / `UIRoot` from `ensureHierarchy()` return values / `getChildByName`. **Never `find()` in onLoad.** If Canvas is not ready, `onLoad` does not nest a duplicate Canvas; `start()` retries with `boot('start', true)`.
+>
+> Headless check: `node tools/verify-boot.mjs`
 
 First open compiles `temp/tsconfig.cocos.json`. Ignore IDE red squiggles until then.
 
@@ -51,7 +58,7 @@ In Creator preview (no `wx`), ads use an in-game countdown stub. Replace IDs bef
 
 | Script | Role |
 |--------|------|
-| `GameManager` | Run loop, scoring, revive, interstitial cadence |
+| `GameManager` | Boot + run loop, scoring, revive, interstitial cadence |
 | `BoardManager` | 8×8 cells, ghost / hint / clear animation |
 | `PieceTray` | 3 slots, tap select, drag ghost |
 | `UIManager` | Code-built screens + simulated ad overlays |
@@ -64,19 +71,21 @@ In Creator preview (no `wx`), ads use an in-game countdown stub. Replace IDs bef
 - Physics 2D/3D **off**; collision matrix `0_0: false` (no DEFAULT self-collision).
 - Engine modules: 2D + UI + Graphics + Tween; 3D/physics/spine off.
 - `.gitignore`: `library/`, `temp/`, `local/`, `build/`, `profiles/`.
+- Custom scene scripts must use the **23-char compressed CID**, not the full UUID.
 
 ## 微信小游戏
 
-Build checklist, orientation, AppID, and ad ID replacement: **[WECHAT.md](./WECHAT.md)**.
+Build checklist (`wechatgame`, portrait, `touristappid`, output `build/wechatgame`): **[WECHAT.md](./WECHAT.md)**.
 
 ## Playtest (no Creator)
 
 ```bash
-node cocos/playtest.mjs
+node tools/verify-boot.mjs
+node playtest.mjs
 ```
 
 ---
 
 ## 中文
 
-用 **Cocos Creator 3.8.8** 打开本目录 `cocos/`，打开 `main.scene` 后预览。玩法与根目录 HTML 原型一致：8×8、三块托盘、整行/整列消除、连消、软开局与防卡死补块、每局限 1 次激励复活。广告位对接 `wx.createBannerAd` / `createInterstitialAd` / `createRewardedVideoAd`；预览环境走倒计时占位。导出微信小游戏前请把 `AdConfig.ts` 里的 `adUnitId` 换成流量主 ID，步骤见 `WECHAT.md`。
+用 **Cocos Creator 3.8.8** 打开本目录 `cocos/`，打开 `main.scene` 后预览。层级为 `Scene → Canvas → GameController`。控制台应有 `boot(...) SUCCESS`，画面是开始页而不是空白清屏；点 Play 出现 8×8 棋盘和三格托盘。`onLoad` 禁止 `find()`，Canvas 未就绪时由 `start()` 补建。玩法与根目录 HTML 原型一致。广告位对接 `wx.createBannerAd` / `createInterstitialAd` / `createRewardedVideoAd`；预览环境走倒计时占位。导出微信小游戏：平台 `wechatgame`、竖屏、AppID 先填 `touristappid`、输出 `build/wechatgame`，步骤见 `WECHAT.md`。
