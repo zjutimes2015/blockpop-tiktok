@@ -6,7 +6,20 @@
     "watermarkLocation": "default",
     "autoFit": true,
     "logo": {
-      "type": "default"
+      "type": "none"
+    },
+    "background": {
+      "type": "color",
+      "color": {
+        "__type__": "cc.Color",
+        "r": 26,
+        "g": 10,
+        "b": 46,
+        "a": 255
+      }
     }
+  },
+  "textureCompressConfig": {
+    "genMipmaps": false
   }
 }

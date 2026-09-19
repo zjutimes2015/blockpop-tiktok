@@ -54,6 +54,10 @@ export class PieceTray extends Component {
         return this._dragIdx;
     }
 
+    public hasTray(): boolean {
+        return !!(this.trayNode && this.trayNode.isValid !== false && this.trayNode.parent && this._slots.length === TRAY_SIZE);
+    }
+
     public build(parent: Node, width: number): Node {
         this._slotW = Math.min(130, Math.floor((width - 24) / 3));
         this._slotH = 100;

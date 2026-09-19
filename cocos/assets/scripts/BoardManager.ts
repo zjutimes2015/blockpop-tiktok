@@ -1,4 +1,4 @@
-import { _decorator, Color, Component, Graphics, Node, tween, Tween, UIOpacity, UITransform, Vec3 } from 'cc';
+import { _decorator, Color, Component, Graphics, Node, tween, Tween, UIOpacity, Vec3 } from 'cc';
 import { COLORS, COLOR_MINT, GRID } from './core/Constants';
 import type { Cell, Grid, Piece } from './core/Types';
 import { createNode, fillRoundRect, hexToColor, paintPanel, setOpacity, strokeRoundRect, uit } from './ui/UiFactory';
@@ -21,6 +21,10 @@ export class BoardManager extends Component {
 
     private _cells: CellView[] = [];
     private _grid: Grid = [];
+
+    public hasBoard(): boolean {
+        return !!(this.boardNode && this.boardNode.isValid !== false && this.boardNode.parent && this._cells.length === GRID * GRID);
+    }
 
     public build(parent: Node, size: number): Node {
         this.boardSize = size;
@@ -154,7 +158,6 @@ export class BoardManager extends Component {
 
     public containsWorld(world: Vec3): boolean {
         if (!this.boardNode) return false;
-        const box = uit(this.boardNode).getBoundingBoxToWorld();
         const box = uit(this.boardNode).getBoundingBoxToWorld();
         return world.x >= box.x && world.x <= box.x + box.width && world.y >= box.y && world.y <= box.y + box.height;
     }
